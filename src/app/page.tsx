@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [type, setType] = useState('urls');
@@ -8,6 +8,34 @@ export default function Home() {
   const [status, setStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [savedKeys, setSavedKeys] = useState<{ name: string; key: string }[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+
+  // Carregar chaves do localStorage ao iniciar
+  useEffect(() => {
+    const stored = localStorage.getItem('purge_saved_keys');
+    if (stored) {
+      try {
+        setSavedKeys(JSON.parse(stored));
+      } catch (e) {
+        console.error('Erro ao carregar chaves', e);
+      }
+    }
+  }, []);
+
+  const handleSaveKey = () => {
+    if (!newKeyName || !apiKey) return;
+    const updated = [...savedKeys, { name: newKeyName, key: apiKey }];
+    setSavedKeys(updated);
+    localStorage.setItem('purge_saved_keys', JSON.stringify(updated));
+    setNewKeyName('');
+  };
+
+  const handleRemoveKey = (index: number) => {
+    const updated = savedKeys.filter((_, i) => i !== index);
+    setSavedKeys(updated);
+    localStorage.setItem('purge_saved_keys', JSON.stringify(updated));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,14 +118,58 @@ export default function Home() {
                     </svg>
                     Autenticação Interna
                   </label>
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="w-full bg-zinc-950/50 border border-zinc-700/50 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all shadow-inner"
-                    placeholder="Cole sua APP_API_KEY aqui"
-                    required
-                  />
+                  
+                  {savedKeys.length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {savedKeys.map((item, idx) => (
+                        <div key={idx} className="group flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-lg pl-3 pr-1 py-1 transition-all hover:border-orange-500/50">
+                          <button 
+                            type="button"
+                            onClick={() => setApiKey(item.key)}
+                            className="text-xs font-medium text-zinc-300 group-hover:text-orange-400"
+                          >
+                            {item.name}
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveKey(idx)}
+                            className="p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="flex-1 bg-zinc-950/50 border border-zinc-700/50 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all shadow-inner"
+                      placeholder="Cole sua APP_API_KEY aqui"
+                      required
+                    />
+                    <div className="flex flex-col gap-2">
+                       <input
+                        type="text"
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        className="w-32 bg-zinc-950/50 border border-zinc-700/50 rounded-xl px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500"
+                        placeholder="Nome do perfil"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveKey}
+                        className="text-[10px] font-bold uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white py-1 rounded-lg border border-zinc-700 transition-all"
+                      >
+                        Salvar Perfil
+                      </button>
+                    </div>
+                  </div>
                 </section>
 
                 {/* Type Selection */}
